@@ -83,11 +83,9 @@ async function handleCreateGroup() {
   try {
     const groupName = await prompt("请输入饭团名称");
     if (!groupName) {
-      setTimeout(() => {
-        uni.showToast({
-          icon: "error",
-          title: "饭团名称为空",
-        });
+      uni.showToast({
+        icon: "error",
+        title: "饭团名称为空",
       });
       return;
     }
@@ -101,9 +99,7 @@ async function handleCreateGroup() {
     });
     await request.post("/group/create", payload);
 
-    setTimeout(() => {
-      uni.showToast({ icon: "success", title: "创建成功" });
-    });
+    uni.showToast({ icon: "success", title: "创建成功" });
   } catch (error) {
     console.log(error);
   } finally {
@@ -116,11 +112,9 @@ async function handleJoinGroup() {
   try {
     const groupName = await prompt("请输入饭团名称");
     if (!groupName) {
-      setTimeout(() => {
-        uni.showToast({
-          icon: "error",
-          title: "饭团名称为空",
-        });
+      uni.showToast({
+        icon: "error",
+        title: "饭团名称为空",
       });
       return;
     }
@@ -134,9 +128,7 @@ async function handleJoinGroup() {
     });
     await request.post("/group/join", payload);
 
-    setTimeout(() => {
-      uni.showToast({ icon: "success", title: "加入成功" });
-    });
+    uni.showToast({ icon: "success", title: "加入成功" });
   } catch (error) {
     console.log(error);
   } finally {
@@ -180,11 +172,7 @@ function toMyGroups() {
     flex-direction: column;
     gap: 18rpx;
     padding: 48rpx 0;
-    background: linear-gradient(
-      to bottom right,
-      #409EFF,
-      #d9ecff
-    );
+    background: linear-gradient(to bottom right, #409eff, #d9ecff);
   }
 
   .menu {

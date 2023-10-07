@@ -30,11 +30,15 @@
 
         <view
           class="vote-box"
-          v-if="votes.length > 0"
-          :class="{ agree: votes[0].isAgree }"
+          v-if="activeVote"
+          :class="{ agree: activeVote.isAgree }"
           @click="handleShowVoteInfo"
         >
-          <img class="avatar" :src="votes[0].user.avatar" alt="头像" />
+          <up-avatar
+            class="avatar"
+            :src="activeVote.user.avatar"
+            size="78rpx"
+          ></up-avatar>
         </view>
       </view>
 
@@ -91,9 +95,14 @@ async function getUserInfo() {
     userState.nickname = res.nickname;
     userState.activeGroup = res.activeGroup;
     if (!userState.activeGroup) {
+      uni.hideLoading();
+
+      await confirm("请先选择组", "取消", "确定", false);
+
       uni.switchTab({
         url: "/pages/user/index",
       });
+      return Promise.reject("未选组");
     }
   } catch (error) {
     console.log(error);
@@ -114,6 +123,14 @@ const votes = computed(() => {
   return itemState.order.votes;
 });
 
+const activeVote = computed(() => {
+  if (votes.value.length === 0) return null;
+
+  return (
+    votes.value.find((vote) => vote.user.id === userState.id) || votes.value[0]
+  );
+});
+
 const sortedItems = computed(() => {
   const arr1 = [];
   const arr2 = [];
@@ -131,7 +148,7 @@ const sortedItems = computed(() => {
 });
 
 async function handleItemClick(item) {
-  if (!isCook) return;
+  if (!isCook.value) return;
   try {
     const index = await selectAction();
 
@@ -145,8 +162,6 @@ async function handleItemClick(item) {
       await confirm(`确认删除 '${item.itemName}' 吗?`, "取消", "确定");
 
       await updateOrder(null, [item]);
-
-      getItems();
     }
   } catch (error) {}
 }
@@ -154,7 +169,6 @@ async function handleItemClick(item) {
 async function handleRefresh() {
   await confirm("确认清空吗?", "取消", "确定");
   await updateOrder(null, [...itemState.todayItemList]);
-  getItems();
 }
 
 // 获取菜品列表
@@ -197,6 +211,7 @@ async function getRandomItem() {
     };
 
     const item = await request.post("/order/randomItem", payload);
+
     uni.hideLoading();
 
     await confirm(`'${item.itemName}' 怎么样?`, "不要", "就这个");
@@ -206,8 +221,6 @@ async function getRandomItem() {
       [item],
       itemState.activeItem ? [itemState.activeItem] : null
     );
-
-    getItems();
   } catch (error) {
     console.log(error);
   } finally {
@@ -236,9 +249,9 @@ async function updateOrder(items, removeItems) {
 
     await request.post("/order/update", payload);
 
-    setTimeout(() => {
-      uni.showToast({ icon: "success", title: "更新成功" });
-    });
+    await getItems();
+
+    uni.showToast({ icon: "success", title: "更新成功" });
   } catch (error) {
     console.log(error);
   } finally {
@@ -257,27 +270,19 @@ function getTodayTimeRange() {
   return [start, end]; // 返回时间区间数组
 }
 
-function getTomorrowTimeRange() {
-  const today = new Date(); // 获取当前日期
-  const tomorrow = new Date(today); // 创建一个新日期对象作为明天
-  tomorrow.setDate(today.getDate() + 1); // 设置日期为明天
-
-  const start = new Date(tomorrow); // 复制明天日期作为开始日期
-  start.setHours(0, 0, 0, 0); // 设置开始时间为明天的0点0分0秒0毫秒
-
-  const end = new Date(tomorrow); // 复制明天日期作为结束日期
-  end.setHours(23, 59, 59, 999); // 设置结束时间为明天的23点59分59秒999毫秒
-
-  return [start, end]; // 返回时间区间数组
-}
-
-function confirm(content, cancelText = "取消", confirmText = "确定") {
+function confirm(
+  content,
+  cancelText = "取消",
+  confirmText = "确定",
+  showCancel = true
+) {
   return new Promise((resolve, reject) => {
     uni.showModal({
       title: "提示",
       content,
       cancelText,
       confirmText,
+      showCancel,
       success: ({ confirm }) => {
         if (confirm) {
           resolve();
@@ -333,6 +338,9 @@ function selectAction() {
 // 投票相关
 async function handleVote(flag) {
   try {
+    if (!itemState.order || itemState.todayItemList.length === 0) {
+      uni.showToast({ icon: "error", title: "菜单还未生成" });
+    }
     uni.showLoading({
       title: "更新中",
       mask: true,
@@ -345,11 +353,9 @@ async function handleVote(flag) {
 
     await request.post("/vote", payload);
 
-    setTimeout(() => {
-      uni.showToast({ icon: "success", title: "投票成功" });
-    });
+    uni.showToast({ icon: "success", title: "投票成功" });
 
-    getItems();
+    await getItems();
   } catch (error) {
     console.log(error);
   } finally {
@@ -357,6 +363,7 @@ async function handleVote(flag) {
   }
 }
 
+// 展示投票详情
 function handleShowVoteInfo() {
   let agreeNum = 0;
   let disAgreeNum = 0;
@@ -481,10 +488,10 @@ function toMenuPage() {
           border: 10rpx solid #67c23a80;
         }
 
-        .avatar {
-          width: 100%;
-          height: 100%;
-        }
+        // .avatar {
+        //   width: 100% !important;
+        //   height: 100% !important;
+        // }
       }
     }
 

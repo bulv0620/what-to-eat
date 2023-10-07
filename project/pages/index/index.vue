@@ -68,9 +68,15 @@ async function getUserInfo() {
     userState.activeGroup = res.activeGroup;
 
     if (!userState.activeGroup) {
+      uni.hideLoading();
+      
+      await confirm("请先选择组", "取消", "确定", false);
+
       uni.switchTab({
         url: "/pages/user/index",
       });
+
+      return Promise.reject("未选组");
     }
   } catch (error) {
     console.log(error);
@@ -148,6 +154,33 @@ function getTodayTimeRange() {
   end.setHours(23, 59, 59, 999); // 设置结束时间为当天的23点59分59秒999毫秒
 
   return [start, end]; // 返回时间区间数组
+}
+
+function confirm(
+  content,
+  cancelText = "取消",
+  confirmText = "确定",
+  showCancel = true
+) {
+  return new Promise((resolve, reject) => {
+    uni.showModal({
+      title: "提示",
+      content,
+      cancelText,
+      confirmText,
+      showCancel,
+      success: ({ confirm }) => {
+        if (confirm) {
+          resolve();
+        } else {
+          reject();
+        }
+      },
+      fail: () => {
+        reject();
+      },
+    });
+  });
 }
 </script>
 

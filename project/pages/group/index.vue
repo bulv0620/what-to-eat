@@ -21,7 +21,7 @@
             v-if="userState.activeGroup?.id === group.id"
             text="当前饭团"
             size="mini"
-						type="primary"
+            type="primary"
           ></u-tag>
           <u-tag
             v-if="group.cook.id === userState.id"
@@ -127,13 +127,13 @@ async function setActiveGroup(group) {
       ...group,
     };
     await request.post("/user/setActiveGroup", payload);
-    setTimeout(() => {
-      uni.showToast({
-        icon: "success",
-        title: "设置成功",
-      });
+
+    await getUserInfo();
+
+    uni.showToast({
+      icon: "success",
+      title: "设置成功",
     });
-    getUserInfo();
   } catch (error) {
     console.log(error);
   } finally {

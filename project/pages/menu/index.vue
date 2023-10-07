@@ -12,7 +12,12 @@
           <!-- #ifndef APP-NVUE -->
           <u-index-anchor :text="menuState.indexList[index]"></u-index-anchor>
           <!-- #endif -->
-          <view class="list-cell" v-for="(cell, index) in item" :key="cell.id">
+          <view
+            class="list-cell"
+            v-for="(cell, index) in item"
+            :key="cell.id"
+            @click="handleUpdateItem(cell)"
+          >
             {{ cell.itemName }}
           </view>
         </u-index-item>
@@ -114,13 +119,13 @@ async function handleCreateItem() {
   try {
     const type = await select();
     const itemName = await prompt("请输入菜品名称");
-		if(!itemName) {
-			uni.showToast({
-				icon: 'error', 
-				title: '名称不能为空'
-			})
-			return
-		}
+    if (!itemName) {
+      uni.showToast({
+        icon: "error",
+        title: "名称不能为空",
+      });
+      return;
+    }
 
     const payload = {
       group: userState.activeGroup,
@@ -135,9 +140,7 @@ async function handleCreateItem() {
 
     await request.post("/item/create", payload);
 
-    setTimeout(() => {
-      uni.showToast({ icon: "success", title: "创建成功" });
-    });
+    uni.showToast({ icon: "success", title: "创建成功" });
 
     getMenuItems();
   } catch (error) {
@@ -147,11 +150,45 @@ async function handleCreateItem() {
   }
 }
 
-function prompt(title) {
+// 更新菜品
+async function handleUpdateItem(item) {
+  try {
+    const itemName = await prompt("请输入菜品名称", item.itemName);
+
+    if (!itemName) {
+      uni.showToast({ icon: "error", title: "菜品名称为空" });
+      return;
+    }
+
+    uni.showLoading({
+      title: "更新中",
+      mask: true,
+    });
+
+    const payload = {
+      id: item.id,
+      itemName,
+      group: userState.activeGroup,
+    };
+
+    await request.post("/item/update", payload);
+
+    await getMenuItems();
+
+    uni.showToast({ icon: "success", title: "更新成功" });
+  } catch (error) {
+    console.log(error);
+  } finally {
+    uni.hideLoading();
+  }
+}
+
+function prompt(title, placeholderText = "") {
   return new Promise((resolve, reject) => {
     uni.showModal({
       title,
       editable: true,
+      placeholderText,
       success: ({ confirm, content }) => {
         if (confirm) {
           resolve(content);
@@ -192,7 +229,7 @@ function select() {
     position: absolute;
     right: 32rpx;
     bottom: 68rpx;
-		z-index: 999;
+    z-index: 999;
   }
 
   .empty {
@@ -212,6 +249,10 @@ function select() {
     font-size: 16px;
     line-height: 24px;
     background-color: #fff;
+
+    &:active {
+      background: #e3e3e3;
+    }
   }
 }
 </style>
